@@ -10,14 +10,17 @@ from datetime import datetime
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.db import IntegrityError
+from django.db.models import Max
 
 
 """ TO GET DATA FROM THE FORMS """
 
 
-@login_required(login_url='Authentication:MClandingPage')
+@login_required(login_url='Authentication:MarketChecker')
 def isforms(request):
-    origins = Origin.objects.all() 
+    origins = Origin.objects.all()
+    species_list = Species.objects.all()
 
     if request.method == 'POST':
         fishtype = request.POST['fishtype']
@@ -26,7 +29,7 @@ def isforms(request):
         placeofcatch = request.POST['placeofcatch']
         unload_type_name = request.POST['typeofUnload']
         origin = placeofcatch.capitalize()
-        print(origin)
+
         try:
             dateofCatch = timezone.now().strftime('%Y-%m-%d')
 
@@ -34,19 +37,27 @@ def isforms(request):
             origin_instance, _ = Origin.objects.get_or_create(
                 origin=origin,
                 date=dateofCatch,
-            
             )
         except Origin.DoesNotExist:
             origin_instance = Origin.objects.create(
                 origin=origin,
                 date=dateofCatch,
-                
             )
 
-        species_instance, _ = Species.objects.get_or_create(
-            species_name=fishtype,
-            quantity=quantity,
-        )
+        # Check if the species already exists
+        existing_species = Species.objects.filter(species_name=fishtype).first()
+
+        if existing_species:
+            # Use the existing species instead of creating a new one
+            species_instance = existing_species
+        else:
+            try:
+                species_instance, _ = Species.objects.get_or_create(
+                    species_name=fishtype,
+                    quantity=quantity,
+                )
+            except IntegrityError:
+                species_instance = Species.objects.get(species_name=fishtype)
 
         vessel_instance, _ = Vessel.objects.get_or_create(
             vessel_name=vessel,
@@ -67,9 +78,31 @@ def isforms(request):
 
     return render(request, 'MCforms.html', {
         'origins': origins,
+        'species_list': species_list,
     })
 
+@login_required(login_url='Authentication:PortManager')
+def recentList(request):
+ 
+    most_recent_date = DailyTransaction.objects.aggregate(max_date=Max('date'))['max_date']
 
+    transactions = DailyTransaction.objects.filter(date=most_recent_date)
+
+    search_query = request.GET.get('q')
+
+    if search_query:
+        transactions = transactions.filter(
+            Q(species__species_name__icontains=search_query) |
+            Q(quantity__icontains=search_query) |
+            Q(vessel__vessel_name__icontains=search_query) |
+            Q(origin__origin__icontains=search_query)
+        )
+
+    paginator = Paginator(transactions, 9)
+    page_number = request.GET.get('page')
+    page = paginator.get_page(page_number)
+
+    return render(request, 'recentlist.html', {'transactions': page, 'search_query': search_query})
 """ FOR EDITING USER INFORMATION """
 @login_required(login_url='Authentication:loginadmin')
 def edit_user(request, id):
@@ -102,14 +135,15 @@ def edit_user(request, id):
     })
 
 """ TO DELETE USER IN USER'S TABLE """
+@login_required(login_url='Authentication:loginadmin')
 def delete_user(request, id):
     user = get_object_or_404(User, id=id)
     user.delete()
     return redirect('Analytics:userstable')  
 
 
-@login_required(login_url='Authentication:landingPage')
-def  loadingdash(request):
+@login_required(login_url='Authentication:PortManager')
+def  OCdash(request):
     return render(request, 'OCDash.html' )
 
 
@@ -188,6 +222,8 @@ def dataUnloadingDash(request):
             'total_quantity': entry['total_quantity'],
         })
 
+
+
     data = {
         'labels_daily': labels_daily_sorted,
         'quantities': quantities_sorted,
@@ -201,7 +237,9 @@ def dataUnloadingDash(request):
         'species_data': species_data,
         'origin_data': origin_data,  
         'vessel_data': vessel_data,  
+
     }
+    
 
     return JsonResponse(data)
 
@@ -210,9 +248,21 @@ def dataUnloadingDash(request):
 
 
 
-@login_required(login_url='Authentication:landingPage')
-def  unloadingdash(request):
-    return render(request, 'FCDash.html' )
+@login_required(login_url='Authentication:PortManager')
+def FCdash(request):
+    species_list = Species.objects.all()
+    
+    # Get distinct years from the database
+    years = DailyTransaction.objects.dates('date', 'year').order_by('-date').distinct()
+
+    # Extract unique years using a set
+    unique_years_set = set(year.year for year in years)
+
+    # Convert the set back to a list for iteration in the template
+    unique_years = list(unique_years_set)
+
+    return render(request, 'FCDash.html', {'species_list': species_list, 'unique_years': unique_years})
+
 
 """ CONTENTS OF ADMIN DASHBOARD """
 @login_required(login_url='Authentication:loginadmin')
@@ -282,23 +332,6 @@ def userstable(request):
     })
 
 
-""" LOADING HISTORY TABLES """
-@login_required(login_url='Authentication:loginadmin')
-def loadhistory(request):
-    transactions = DailyTransaction.objects.all()
-    search_query = request.GET.get('q')
-    
-    if search_query:
-        transactions = transactions.filter(
-            Q(species__species_name__icontains=search_query) |
-            Q(quantity__icontains=search_query)
-        )
-    
-    paginator = Paginator(transactions, 9)
-    page_number = request.GET.get('page')
-    page = paginator.get_page(page_number)
-    
-    return render(request, 'loadhistory.html', {'transactions': page, 'search_query': search_query})
 
 
 """ UNLOADING HISTORY TABLE """

@@ -1,61 +1,41 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> IsdaanIS:Admin</title>
-    <link rel="stylesheet" href="{% static 'css/historyTables.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href='https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css' rel='stylesheet'>
-   </head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recent List</title>
+  <link rel="stylesheet" href="{% static 'css/recentlist.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href='https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css' rel='stylesheet'>
+</head>
 <body>
-  <!-- Code for sidebar -->
   
-  <div class="main_box">
-    <input type="checkbox" id="check">
-    <div class="navbar">
-     
-    <h2>ISdaanIS</h2>
-    <div class="btn_one">
-      <label for="check">
-        <i class='bx bx-menu'></i>
-      </label>
-    </div>
-  </div>
-    <div class="sidebar_menu">
-      <div class="logo">
-        <div class="logo-image">
-          <img src="{% static 'img/pfda.png' %}" alt="">
-          <a href="#">IsdaanIS</a>
-      </div>
-        
+  <div class="navbar">
+    <h2>MARKET CHECKER RECENT DATA INPUT</h2>
+    <div class="dropdown">
+        <button class="dropbtn">Menu</button>
+        <div class="dropdown-content">
+            <!-- Add other menu items if needed -->
+            <a href="{% url 'Analytics:forms' %}">Add New Data</a>
+            <a href="#" id="logoutButton" data-logout-url="{% url 'Authentication:MClandingPage' %}" class="text-decoration-none fs-4 text-dark">LOGOUT</a>
           </div>
-        <div class="btn_two">
-          <label for="check">
-            <i class='bx bx-x'></i>
-          </label>
         </div>
-      <div class="menu">
-        <ul>
-          <li>
-            <a href="{% url 'Analytics:admindashboard' %}">
-              <i class='bx bx-arrow-back'></i>Back</a>
-          </li>
-          <li>
-            <a href="#" id="logoutButton" data-logout-url="{% url 'Authentication:loginadmin' %}">
-              <i class='bx bx-exit'></i>Logout
-            </a>
-          </li>
-        </ul>
+        <div id="logoutModal" class="modal">
+          <div class="modal-content">
+              <span class="close" onclick="closeModal()">&times;</span>
+              <p>Are you sure you want to logout?</p>
+              <button id="confirmLogout" onclick="performLogout()">Logout</button>
+              <button id="cancelLogout" onclick="closeModal()">Cancel</button>
+          </div>
       </div>
+      
+      
     </div>
 
     
-    <!-- Codes For Load History Table -->
     <div class="table-responsive bg-secondary">
       <div class="topbar">
-        <h2>Unloading History</h2>
         <form id="search-form" method="get">
             <div class="search-bar">
                 <input type="text" id="search-input" name="q" placeholder="Search.." {% if search_query %}value="{{ search_query }}"{% endif %}>
@@ -114,19 +94,10 @@
         {% endif %}
     </span>
 </div>
-<div id="logoutModal" class="modal">
-  <div class="modal-content">
-      <span class="close" onclick="closeModal()">&times;</span>
-      <p>Are you sure you want to logout?</p>
-      <button id="confirmLogout" onclick="performLogout()">Logout</button>
-      <button id="cancelLogout" onclick="closeModal()">Cancel</button>
-  </div>
-</div>
-</div>
 
 
-  
-<script src="{% static 'js/unloadhistory.js' %}"></script>
-  </body>
 
+
+  <script src="{% static 'js/recentlist.js' %}"></script>
+</body>
 </html>

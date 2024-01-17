@@ -32,10 +32,38 @@ sidebarToggle.addEventListener("click", () => {
   }
 });
 
-function showLogoutMessage() {
-  const logoutMessage = document.getElementById('logout-message');
-  logoutMessage.textContent = 'You have been logged out.';
+
+function openLogoutModal() {
+  document.getElementById('logoutModal').style.display = 'block';
 }
+
+function closeLogoutModal() {
+  document.getElementById('logoutModal').style.display = 'none';
+}
+
+function showLogoutSuccessMessage() {
+  var logoutSuccessMessage = document.getElementById('logoutSuccessMessage');
+  logoutSuccessMessage.style.display = 'block';
+
+  // Hide the message after a certain duration (e.g., 3 seconds)
+  setTimeout(function () {
+    logoutSuccessMessage.style.display = 'none';
+  }, 3000);
+}
+
+function logout() {
+  // Add your logout logic here
+  // For example, redirecting to the logout URL
+  var logoutUrl = document.querySelector('[data-logout-url]').dataset.logoutUrl;
+  window.location.href = logoutUrl;
+
+  // Display logout success message
+  showLogoutSuccessMessage();
+}
+
+
+
+
 
 /* to get random colors for the bar chart */
 function getRandomColor() {
@@ -52,54 +80,83 @@ fetch('http://127.0.0.1:8000/analytics/unloadingDashData/')
   .then(response => response.json())
   .then(data => {
 
-    // Chart.js code for the first bar chart (Fishtype)
 
-
-    // Chart.js code for the second bar chart (Vessel)
-    const ctx2 = document.getElementById('Vessel').getContext('2d');
-    new Chart(ctx2, {
-      type: 'bar',
-      data: {
-        labels: data.vessel_data.map(item => item.vessel_name), // Change 'vessels' to 'vessel'
+  // Chart.js code for the first bar chart (Vessels)
+const ctx2 = document.getElementById('Vessel').getContext('2d');
+const vesselChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+        labels: data.vessel_data.map(item => item.vessel_name),
         datasets: [{
-          label: 'Quantity',
-          data: data.vessel_data.map(item => item.total_quantity), // Use the 'total_quantity' from the 'vessel_data'
-          borderColor: getRandomColor(data.vessel.length), // Use random colors for each vessel
-          backgroundColor: getRandomColor(data.vessel.length),
-          borderWidth: 1.5
+            label: 'Quantity',
+            data: data.vessel_data.map(item => item.total_quantity),
+            borderColor: getRandomColor(data.vessel_data.length),
+            backgroundColor: getRandomColor(data.vessel_data.length),
+            borderWidth: 1.5
         }]
-      },
-      options: {
+    },
+    options: {
         scales: {
-          y: {
-            beginAtZero: true
-          }
+            y: {
+                beginAtZero: true
+            }
         }
-      }
-    });
+    }
+});
 
-    // Chart.js code for the third bar chart (PlaceOfCatch)
-    const ctx3 = document.getElementById('PlaceOfCatch').getContext('2d');
-    new Chart(ctx3, {
-      type: 'bar',
-      data: {
-        labels: data.origin_data.map(item => item.origin), // Change 'origins' to 'origin'
+// Chart.js code for the second bar chart (PlaceOfCatch)
+const ctx3 = document.getElementById('PlaceOfCatch').getContext('2d');
+const placeOfCatchChart = new Chart(ctx3, {
+    type: 'bar',
+    data: {
+        labels: data.origin_data.map(item => item.origin),
         datasets: [{
-          label: 'Quantity',
-          data: data.origin_data.map(item => item.total_quantity), // Use the 'total_quantity' from the 'origin_data'
-          borderColor: getRandomColor(data.origin.length), // Use random colors for each origin
-          backgroundColor: getRandomColor(data.origin.length),
-          borderWidth: 1.5
+            label: 'Quantity',
+            data: data.origin_data.map(item => item.total_quantity),
+            borderColor: getRandomColor(data.origin_data.length),
+            backgroundColor: getRandomColor(data.origin_data.length),
+            borderWidth: 1.5
         }]
-      },
-      options: {
+    },
+    options: {
         scales: {
-          y: {
-            beginAtZero: true
-          }
+            y: {
+                beginAtZero: true
+            }
         }
-      }
-    });
+    }
+});
+
+
+// Add an event listener to the fish type select element
+const fishtypeSelect = document.getElementById('fishtypeOptions');
+fishtypeSelect.addEventListener('change', function () {
+    // Get the selected fish name
+    const selectedFish = fishtypeSelect.value;
+    console.log('Selected Fish:', selectedFish);
+
+    // Filter data based on the selected fish
+    const filteredVesselData = data.vessel_data.filter(item => item.species_name === selectedFish);
+    const filteredOriginData = data.origin_data.filter(item => item.species_name === selectedFish);
+
+    // Log filtered data
+    console.log('Filtered Vessel Data:', filteredVesselData);
+    console.log('Filtered Origin Data:', filteredOriginData);
+
+    // Update the charts with the filtered data
+    console.log('Updating Vessel Chart');
+    vesselChart.data.labels = filteredVesselData.map(item => item.vessel_name);
+    vesselChart.data.datasets[0].data = filteredVesselData.map(item => item.total_quantity);
+    vesselChart.update();
+
+    console.log('Updating PlaceOfCatch Chart');
+    placeOfCatchChart.data.labels = filteredOriginData.map(item => item.origin);
+    placeOfCatchChart.data.datasets[0].data = filteredOriginData.map(item => item.total_quantity);
+    placeOfCatchChart.update();
+});
+
+
+
 
     function getRandomColor() {
       const letters = '0123456789ABCDEF';
@@ -118,7 +175,7 @@ fetch('http://127.0.0.1:8000/analytics/unloadingDashData/')
         labels: data.labels_monthly, // Use the 'labels' data from Django view
         datasets: [{
           label: 'Quantity',
-          data: data.quantities_monthly, // Use the 'quantities' data from Django view
+          data: data.quantities_monthly, 
           borderColor: 'rgba(0, 2, 161, 1)',
           backgroundColor: getRandomColor(1),
           borderWidth: 2
